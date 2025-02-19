@@ -1,0 +1,9 @@
+﻿google-generativeai==0.8.4
+mysql-connector-python==9.2.0
+pandas==2.2.3
+psycopg2==2.9.10
+python-dotenv==1.0.1
+streamlit==1.42.0
+streamlit-ace==0.1.1
+
+
