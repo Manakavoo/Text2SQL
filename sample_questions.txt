@@ -1,0 +1,34 @@
+Basic Queries (Single Table)
+
+"List all employees' names and emails."
+"Retrieve the names of all departments."
+"Get all projects and their start dates."
+"Find the salary details of employee 'Surya Narayan'."
+"Show all attendance records with check-in and check-out times."
+
+
+Intermediate Queries (Joins & Filters)
+
+"List the names and emails of all employees working in the 'Software Development' department."
+"Get the list of employees who joined after January 1, 2023."
+"Find all employees assigned to the 'AI Chatbot' project."
+"Show all employees with salaries greater than 70,000."
+"Retrieve all employees and their respective department names."
+
+
+Advanced Queries (Multiple Joins & Conditions)
+
+"List all employees, their department names, and the projects they are assigned to."
+"Find the total number of employees in each department."
+"Get the employees who have not been assigned to any project."
+"Show all projects along with the number of employees assigned to each project."
+"Find all employees who worked on both 'AI Chatbot' and 'RAG-based Search Engine' projects."
+
+
+Expert Queries (Subqueries, Aggregation & Nested Conditions)
+
+"Retrieve the top 3 highest-paid employees and their salary amounts."
+"Find the average salary of employees in the 'Finance' department."
+"Get employees who have the highest salary in their department."
+"List employees who were hired in the last 6 months and are assigned to at least one project."
+"Find employees who have never checked out in the attendance records."

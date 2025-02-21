@@ -1,462 +1,427 @@
-# #app.py
+# # main.py  
 # import streamlit as st
-# import sqlite3
-# import os
-# from dotenv import load_dotenv
-# import google.generativeai as genai
-# import warnings
-# import psycopg2
-# import mysql.connector
+# import pandas as pd
+# from app import read_sql_query, get_gemini_response, get_db_schema , connect_db  , check_postgres_connection , check_mysql_connection , read_postgres_sql
 
-# warnings.filterwarnings("ignore")
-# load_dotenv()
+# st.set_page_config(
+#     page_title="SQL Query Generator",
+#     layout="wide",
+#     initial_sidebar_state="expanded"
+# )
 
-# genai.configure(api_key=os.getenv("GOOGLE_PRO_API_KEY"))
+# if 'user_question' not in st.session_state:
+#     st.session_state.user_question = ""
+# if 'generated_query' not in st.session_state:
+#     st.session_state.generated_query = None
+# if 'query_results' not in st.session_state:
+#     st.session_state.query_results = None
 
-# class Db_configure():
-#     pass
+# if "db_path" not in st.session_state:
+#     st.session_state.db_path = "student.db"
+# if "db_connection" not in st.session_state:
+#     st.session_state.db_connection = False
 
+# if 'db_data' not in st.session_state:
+#     st.session_state.db_data = {}
     
-# def connect_db(db_path=""):
-#      try:
-#         conn = sqlite3.connect(db_path)
-#         cursor = conn.cursor()
-#         cursor.execute("SELECT * FROM student") 
-#         conn.close()
-#         return True
-#      except Exception as e:
-#         return False
-     
-# def check_postgres_connection(host, dbname, user, password, port):
-#     try:
-#         conn = psycopg2.connect(
-#             host=host, database=dbname, user=user, password=password, port=port
-#         )
-#         conn.cursor().execute("SELECT 1")
-#         conn.close()
-#         return "Connection successful!"
-#     except Exception as e:
-#         return f"Error: {e}"
-    
-# def check_mysql_connection(host, dbname, user, password, port):
-#     try:
-#         conn = mysql.connector.connect(
-#             host=host, database=dbname, user=user, password=password, port=port
-#         )
-#         conn.cursor().execute("SELECT 1")
-#         conn.close()
-#         return "Connection successful!"
-#     except Exception as e:
-#         return f"Error: {e}"
+#     st.session_state.db_data["db_type"] = None
+#     st.session_state.db_data["db_host"] = None
 
-# def get_db_schema(db_data={}):
+#     st.session_state.db_data["db_port"] = None
+#     st.session_state.db_data["db_name"] = None
+#     st.session_state.db_data["db_user"] = None
+#     st.session_state.db_data["db_password"] = None
 
-#     if not db_data:
-#         return "No data provided"
+#     st.session_state.db_data["db_schema"] = None
+
+
+
+# def generate_sql():
+#     db_schema = st.session_state.db_data["db_schema"]
+#     response = get_gemini_response(st.session_state.user_question, db_schema)
+#     # response = "SELECT   * FROM student;"
+#     response = response.strip().replace("sql", "").replace("`", "").replace("\n", " ")
+
+#     st.session_state.generated_query = response
     
-#     if db_data["db_type"]=="SQLite":
-#         try:
-#             conn = sqlite3.connect(db_data["db_name"])
-#             cursor = conn.cursor()
-#             schema_data=get_schema_details(cursor,db_data["db_type"])
-#             cursor.close()
-#             return schema_data
-#         except Exception as e:
-#             return f"Error reading schema: {str(e)}"
+# def execute_query():
+#     with st.spinner("Executing query..."):
+#         if st.session_state.db_type=="SQLite":
+#             print("read_sql_query")
+#             data = read_sql_query(st.session_state.generated_query, st.session_state.db_data)
+#             if data:
+#                 st.session_state.query_results = pd.DataFrame(data)
+#             else:
+#                 st.session_state.query_results = None
+
+#         elif st.session_state.db_type == "PostgreSQL":
+#             print("read_postgres_sql")
+#             data= read_postgres_sql(st.session_state.generated_query, st.session_state.db_data)
+#             st.session_state.query_results = data
+#         else:
+#             st.session_state.query_results =" No results..."
+
+# st.title("text 2 sql")
+# st.markdown("convert user prompts into SQL queries and execute them")
+
+# main_container = st.container()
+
+# with main_container:
+#     st.subheader("User generated question")
+
+#     user_input = st.text_area(
+#         "What would you like to know about your data?",
+#         value="All data",
+#         placeholder="e.g., Show me all students with grade above 90",
+#         height=100,
+#         key="user_question_input",
+#     )
+
+#     st.session_state.user_question = user_input
+    
+#     col1, col2 = st.columns([1, 4])
+
+#     with col1:
+#         if st.button("SQL query", use_container_width=True) and st.session_state.user_question:
+#             generate_sql()
+#         # else:
+#         #     st.warning("enter a text to generate a SQL query.")
+    
+#     if st.session_state.generated_query:
+#         st.subheader("generated sql query")
+#         st.code(st.session_state.generated_query, language="sql")
         
-#     elif db_data["db_type"]=="PostgreSQL":
-#         print("POstgres..")
-#         try:
-#             conn = psycopg2.connect(
-#                 host=db_data["db_host"], database=db_data["db_name"], user=db_data["db_user"], password=db_data["db_password"], port=db_data["db_port"]
-#             )
-#             print("Connected..")
-#             cursor= conn.cursor()
-#             schema_data=get_schema_details(cursor,db_data["db_type"])
-#             print("Schema extracted..")
-#             cursor.close()
-#             return schema_data
-#         except Exception as e:
-#             return f"Error reading schema: {str(e)}"
+#         if st.button("Execute", use_container_width=True):
+#             execute_query()
+    
+#         if st.session_state.query_results is not None:
+#             st.subheader("Query Results")
+
+#             try:
+#                 st.dataframe(
+#                 st.session_state.query_results,
+#                 use_container_width=True,
+#                 hide_index=True
+#                 )
+#             except Exception as e:
+#                 st.write(st.session_state.query_results)
+            
+#             # st.download_button(
+#             #     "Download Results 📥",
+#             #     data=st.session_state.query_results.to_csv(index=False),
+#             #     file_name="query_results.csv",
+#             #     mime="text/csv",
+#             #     use_container_width=True
+#             # )
+
+# with st.sidebar:
+#     st.header("Setup")
+    
+#     st.subheader("Database Connection")
+#     db_type = st.sidebar.selectbox("Select Database Type", ["PostgreSQL","SQLite", "MySQL"])
+#     st.session_state.db_type = db_type
+
+#     if db_type == "SQLite":
+#         db_name = st.sidebar.text_input("Database Name",value="student.db")
+
+#         st.session_state.db_data["db_type"] = db_type
+#         st.session_state.db_data["db_host"] = None  
+#         st.session_state.db_data["db_port"] = None
+#         st.session_state.db_data["db_name"] = db_name
+#         st.session_state.db_data["db_user"] = None
+#         st.session_state.db_data["db_password"] = None
+
+#         if st.sidebar.button("Check Connection"):
+#             db_status = connect_db(db_name)
+#             st.session_state.db_connection = db_status
+            
+#             st.sidebar.write(db_status)
+
+#     elif db_type == "PostgreSQL":
+#         host = st.sidebar.text_input("Host", "localhost")
+#         port = st.sidebar.text_input("Port", "5432")
+#         dbname = st.sidebar.text_input("Database Name", value='restapi_db')
+#         user = st.sidebar.text_input("User", value="postgres")
+#         password = st.sidebar.text_input("Password", type="password",value="1234")
+
+#         st.session_state.db_data["db_type"] = db_type
+#         st.session_state.db_data["db_host"] = host  
+#         st.session_state.db_data["db_port"] = port
+#         st.session_state.db_data["db_name"] = dbname
+#         st.session_state.db_data["db_user"] = user
+#         st.session_state.db_data["db_password"] = password
+
+#         if st.sidebar.button("Check Connection"):
+#             print()
+#             db_status = check_postgres_connection(host, dbname, user, password, port)
+#             st.session_state.db_connection = db_status
+#             st.sidebar.write(db_status)
+
+#     elif db_type == "MySQL":
+#         host = st.sidebar.text_input("Host", "localhost")
+#         port = st.sidebar.text_input("Port", "3306")
+#         dbname = st.sidebar.text_input("Database Name")
+#         user = st.sidebar.text_input("User")
+#         password = st.sidebar.text_input("Password", type="password")
+
+#         st.session_state.db_data["db_type"] = db_type
+#         st.session_state.db_data["db_host"] = host  
+#         st.session_state.db_data["db_port"] = port
+#         st.session_state.db_data["db_name"] = dbname
+#         st.session_state.db_data["db_user"] = user
+#         st.session_state.db_data["db_password"] = password
+        
+
+#         if st.sidebar.button("Check Connection"):
+#             db_status = check_mysql_connection(host, dbname, user, password, port)
+#             st.session_state.db_connection = db_status
+            
+#             st.sidebar.write(db_status)
+    
+#     st.subheader("Database Schema")
+#     if st.checkbox("Show Schema") and st.session_state.db_connection:
+
+#         schema_data = get_db_schema(st.session_state.db_data)
+#         st.session_state.db_data["db_schema"] = schema_data
+#         st.code(schema_data, language="sql") 
 #     else:
-#         try:
-#             conn = mysql.connector.connect(
-#             host=db_data["db_host"], database=db_data["db_name"], user=db_data["db_user"], password=db_data["db_password"], port=db_data["db_port"]
-#             )
-#             cursor= conn.cursor()
-#             schema_data=get_schema_details(cursor,db_data["db_type"])
-#             cursor.close()
-#             return schema_data
-#         except Exception as e:
-#             return f"Error reading schema: {str(e)}"
-        
+#         st.write("No schema")
 
-# def get_schema_details(cursor, db_type):
-    
-#     try:
-#         if db_type == "SQLite":
-#             cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-#         elif db_type == "PostgreSQL":
-#             cursor.execute("""
-#             SELECT table_name, column_name, data_type
-#             FROM information_schema.columns
-#             WHERE table_schema = 'public'
-#             ORDER BY table_name, ordinal_position;
-#             """)
-#             schema_data = cursor.fetchall()
-#             schema = []
-#             table_columns = {}
+#     st.markdown("---")
+#     st.markdown("### About")
+#     st.markdown("Convert user text to sql query and execute it.")
 
-#             for table_name, column_name, data_type in schema_data:
-#                 if table_name not in table_columns:
-#                     table_columns[table_name] = []
-#                 table_columns[table_name].append(f"    - {column_name} ({data_type})")
-
-#             for table_name, columns in table_columns.items():
-#                 schema.append(f"\n  Table: {table_name}\n" + "\n".join(columns))
-
-#             return "\n".join(schema)
-        
-#         elif db_type == "MySQL":
-#             cursor.execute("SHOW TABLES;")
-#         tables = cursor.fetchall()
-        
-#         schema = []
-#         for table in tables:
-#             table_name = table[0]
-#             cursor.execute(f"PRAGMA table_info({table_name});")
-#             columns = cursor.fetchall()
-            
-#             columns_info = [f"    - {col[1]} ({col[2]})" for col in columns]
-#             table_schema = f"\n  Table: {table_name}\n" + "\n".join(columns_info)
-#             schema.append(table_schema)
-
-#             return "\n".join(schema)
-
-
-#     except Exception as e:
-#         return f"Error fetching schema details: {e}"
-
-# def get_gemini_response(question, prompt):
-#     model = genai.GenerativeModel("gemini-pro")
-#     print("Model Loaded")
-
-#     response = model.generate_content(prompt + "\n\nUser Question: " + question)
-#     print("Response Generated\n")
-#     return response.text
-
-# def read_sql_query(query, data):
-    
-#     print("SQL query: ",query)
-#     try:
-#         conn = sqlite3.connect(data["db_name"])
-#         print("connected to database")
-#         cur = conn.cursor()
-#         cur.execute(query)
-#         rows = cur.fetchall()
-#         print("query executed")
-#         conn.close()
-#         print("Rows",rows)
-#         return rows
-    
-#     except Exception as e:
-#         st.error(f"Error executing query: {str(e)}")
-#         print("Error occured.../")
-#         return []
-
-# def read_postgres_sql(query, data):
-#     try:
-#         conn = psycopg2.connect(
-#             host=data["db_host"], database=data["db_name"], user=data["db_user"], password=data["db_password"], port=data["db_port"]
-#         )
-#         cursor = conn.cursor()
-#         cursor.execute(query)
-#         rows = cursor.fetchall()
-#         print("query executed")
-#         cursor.close()
-#         conn.close()
-#         print("Rows",rows)
-#         return rows
-    
-#     except Exception as e:
-#         return f"Error: {e}"
-
-# def get_complete_prompt(db_path="student.db"):
-#     schema = get_db_schema(db_path)
-
-#     return f"""
-#         You are an expert SQL assistant. You will help users write SQL queries that are efficient, secure and follow best practices.
-
-#         Database Schema:
-#         {schema}
-
-#         Rules to follow:
-#         1. Only write standardized SQL that works across major databases
-#         2. Convert English questions into SQL queries based on the above schema
-#         3. Add proper indexing suggestions when relevant
-#         4. Use clear aliases and formatting
-#         5. Consider performance implications
-#         6. Avoid SQL injection risks
-#         7. Include error handling where needed
-#         8. SQL code should not have any syntax errors
-#         9. Do not begin or end with any ``` or any other special characters
-#         10. Only use tables and columns that exist in the schema above
-
-#         Important note : Don't mention sql in your response , provide me a only sql query
-
-#         Please provide only the SQL query without any explanations unless specifically asked for details.
-#         """
-
-import os
-from typing import Dict, Any, Optional
-import pandas as pd
-import sqlite3
-import psycopg2
-import mysql.connector
-from dotenv import load_dotenv
-import google.generativeai as genai
 import streamlit as st
-from contextlib import contextmanager
+import pandas as pd
+from logic import DatabaseManager, QueryGenerator
+from streamlit_ace import st_ace
+import datetime
+import json
+import os
 
-load_dotenv()
-genai.configure(api_key=os.getenv("GOOGLE_PRO_API_KEY"))
+history_data={}
 
-class DatabaseManager:
-    def __init__(self):
-        self.connections = {}
+def store_results():
+    temp ={}
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    temp["question"]=st.session_state.user_question
+    temp["query"]= st.session_state.generated_query
+    update_json_file(temp)
+    # history_data[timestamp] = temp
+    return "result stored"
+
+
+
+def update_json_file(updates,file_path="History_data.json"):
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "r") as file:
+                data = json.load(file)
+                if not isinstance(data, list):
+                    data = [data]
+        except json.JSONDecodeError:
+            data = []
+    else:
+        data = []
+
+    data.append(updates)
+
+    with open(file_path, "w") as file:
+        json.dump(data, file, indent=4)
+
+    print(f"JSON file '{file_path}' updated successfully!")
+
+
+
+def init_session_state():
+    default_values = {
+        'user_question': "",
+        'generated_query': None,
+        'query_results': None,
+        'db_connection': False,
+        'db_data': {
+            'db_type': None,
+            'db_host': None,
+            'db_port': None,
+            'db_name': None,
+            'db_user': None,
+            'db_password': None,
+            'db_schema': None
+        },
+        'regen_button':True,
+        'explanation':None,
+    }
     
-    @contextmanager
-    def get_connection(self, db_data: Dict[str, Any]):
-        """Context manager for database connections"""
-        db_type = db_data['db_type']
-        conn_key = f"{db_type}_{db_data.get('db_name')}_{db_data.get('db_host')}"
+    for key, value in default_values.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
+init_session_state()
+
+db_manager = DatabaseManager()
+query_generator = QueryGenerator()
+
+def generate_sql(regeneration=False):
+    db_schema = st.session_state.db_data["db_schema"]
+    if not db_schema:
+        st.error("Please connect to a database and load schema first.")
+        return 
+    if regeneration:
+        response=query_generator.regenerate_query(
+                st.session_state.user_question,
+                db_schema,
+                st.session_state.generated_query,)
+        st.session_state.generated_query = response.strip().replace("sql", "").replace("`", "").replace("\n", " ")
+        return
+    else:
+        response = query_generator.generate_query(
+            st.session_state.user_question, 
+            db_schema
+        )
         
-        try:
-            if conn_key not in self.connections:
-                self.connections[conn_key] = self._create_connection(db_data)
-            
-            yield self.connections[conn_key]
-        except Exception as e:
-            raise e
-        finally:
-            pass  
+        st.session_state.generated_query = response.strip().replace("sql", "").replace("`", "").replace("\n", " ")
+        return 
     
-    def _create_connection(self, db_data: Dict[str, Any]):
-        """Create a new database connection"""
+def execute_query():
+    with st.spinner("Executing query..."):
         try:
-            if db_data['db_type'] == "SQLite":
-                return sqlite3.connect(db_data['db_name'])
-            elif db_data['db_type'] == "PostgreSQL":
-                return psycopg2.connect(
-                    host=db_data['db_host'],
-                    database=db_data['db_name'],
-                    user=db_data['db_user'],
-                    password=db_data['db_password'],
-                    port=db_data['db_port']
-                )
-            elif db_data['db_type'] == "MySQL":
-                return mysql.connector.connect(
-                    host=db_data['db_host'],
-                    database=db_data['db_name'],
-                    user=db_data['db_user'],
-                    password=db_data['db_password'],
-                    port=db_data['db_port']
-                )
+            data = db_manager.execute_query(
+                st.session_state.generated_query, 
+                st.session_state.db_data
+            )
+            if isinstance(data, pd.DataFrame) or data:
+                st.session_state.query_results = data
+            else:
+                st.session_state.query_results = None
         except Exception as e:
-            raise ConnectionError(f"Failed to connect to database: {str(e)}")
-
-    def get_connection_form(self, db_type: str) -> Dict[str, Any]:
-        """Get connection form fields based on database type"""
-        if db_type == "SQLite":
-            return {
-                'db_name': st.sidebar.text_input("Database Name", value="student.db"),
-                'db_host': None,
-                'db_port': None,
-                'db_user': None,
-                'db_password': None
-            }
-        else:
-            return {
-                'db_host': st.sidebar.text_input("Host", "localhost"),
-                'db_port': st.sidebar.text_input("Port", "5432" if db_type == "PostgreSQL" else "3306"),
-                'db_name': st.sidebar.text_input("Database Name", value='restapi_db'),
-                'db_user': st.sidebar.text_input("User", value="postgres"),
-                'db_password': st.sidebar.text_input("Password", type="password", value="1234")
-            }
-
-    def test_connection(self, db_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Test database connection"""
+            # generate_sql(str(e))
+            st.error(f"Error executing query: {str(e)}")
+def result_explanation():
+    with st.spinner("Getting Insghts..."):
         try:
-            with self.get_connection(db_data) as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT 1")
-                return {'success': True, 'message': "Connection successful!"}
-        except Exception as e:
-            return {'success': False, 'message': f"Connection failed: {str(e)}"}
+            insight= query_generator.result_explanation(
+                st.session_state.generated_query,
+                st.session_state.query_results
+            )
+            # print(insight)
+            st.session_state.explanation=insight
+        except Exception as e :
+            st.error("Error getting Insights...")
 
-    def get_schema(self, db_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Get database schema"""
-        try:
-            with self.get_connection(db_data) as conn:
-                cursor = conn.cursor()
-                schema = self._get_schema_details(cursor, db_data['db_type'])
-                return {'success': True, 'schema': schema}
-        except Exception as e:
-            return {'success': False, 'message': f"Failed to get schema: {str(e)}"}
+def render_main_interface():
+    st.title("Text to SQL Generator")
+    st.markdown("Convert natural language to SQL queries and execute them")
 
-    def _get_schema_details(self, cursor, db_type: str) -> str:
-        """Get detailed schema information"""
-        schema = []
-        
-        try:
-            if db_type == "SQLite":
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-                tables = cursor.fetchall()
-                
-                for table in tables:
-                    table_name = table[0]
-                    cursor.execute(f"PRAGMA table_info({table_name});")
-                    columns = cursor.fetchall()
-                    schema.append(self._format_table_schema(table_name, columns, 'sqlite'))
-                    
-            elif db_type == "PostgreSQL":
-                cursor.execute("""
-                    SELECT table_name, column_name, data_type
-                    FROM information_schema.columns
-                    WHERE table_schema = 'public'
-                    ORDER BY table_name, ordinal_position;
-                """)
-                schema_data = cursor.fetchall()
-                schema.extend(self._format_postgres_schema(schema_data))
-                
-            elif db_type == "MySQL":
-                cursor.execute("SHOW TABLES;")
-                tables = cursor.fetchall()
-                
-                for table in tables:
-                    table_name = table[0]
-                    cursor.execute(f"SHOW COLUMNS FROM {table_name};")
-                    columns = cursor.fetchall()
-                    schema.append(self._format_table_schema(table_name, columns, 'mysql'))
+    with st.container():
+        st.subheader("User Question")
+        user_input = st.text_area(
+            "What would you like to know about your data?",
+            value=st.session_state.user_question,
+            placeholder="eg: Show me all students",
+            height=100,
+            key="user_question_input"
+        )
+        st.session_state.user_question = user_input
+
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            if st.button("Generate SQL", use_container_width=True) and user_input:
+                generate_sql()
+                store_results()
+                st.session_state.regen_button = False
+        with col2 :
+            if st.button("Regenerate SQL",disabled=st.session_state.regen_button):
+                generate_sql(True)
+                store_results()
+
+        if st.session_state.generated_query:
+            st.subheader("Generated SQL Query")
+            sql_query = st_ace(value=st.session_state.generated_query, language="sql", theme="monokai", height=100)
+            st.session_state.generated_query = sql_query
+            st.code(sql_query, language="sql")
             
-            return "\n".join(schema)
-        except Exception as e:
-            raise Exception(f"Error fetching schema details: {str(e)}")
+            if st.button("Execute", use_container_width=True):
+                execute_query()
 
-    def _format_table_schema(self, table_name: str, columns: list, db_type: str) -> str:
-        """Format table schema based on database type"""
-        if db_type == 'sqlite':
-            columns_info = [f"    - {col[1]} ({col[2]})" for col in columns]
-        elif db_type == 'mysql':
-            columns_info = [f"    - {col[0]} ({col[1]})" for col in columns]
-        else:
-            columns_info = [f"    - {col[1]} ({col[2]})" for col in columns]
-            
-        return f"\n  Table: {table_name}\n" + "\n".join(columns_info)
-
-    def _format_postgres_schema(self, schema_data: list) -> list:
-        """Format PostgreSQL schema data"""
-        table_columns = {}
-        for table_name, column_name, data_type in schema_data:
-            if table_name not in table_columns:
-                table_columns[table_name] = []
-            table_columns[table_name].append(f"    - {column_name} ({data_type})")
-        
-        return [f"\n  Table: {table_name}\n" + "\n".join(columns) 
-                for table_name, columns in table_columns.items()]
-
-    def execute_query(self, query: str, db_data: Dict[str, Any]) -> Optional[pd.DataFrame]:
-        """Execute SQL query and return results as DataFrame"""
-        try:
-            with self.get_connection(db_data) as conn:
-                cursor = conn.cursor() 
-                query_validation=self.validate_sql(cursor,query,db_data["db_type"])
-                if not query_validation["success"]:
-                    # cursor.close()
-                    # conn.commit()  # Commit changes if needed
-                    # conn.close()
-                    return query_validation["Msg"]
-                
-                cursor.execute(query)
-                if cursor.description:
-                    columns = [desc[0] for desc in cursor.description]
-                    rows = cursor.fetchall()
-
-                    # cursor.close()
-                    # conn.commit()  
-                    # conn.close()
-                
-                    if rows:
-                        return pd.DataFrame(rows, columns=columns)
+            if st.session_state.query_results is not None:
+                st.subheader("Query Results")
+                try:
+                    if isinstance(st.session_state.query_results, pd.DataFrame):
+                        st.dataframe(
+                            st.session_state.query_results,
+                            use_container_width=True,
+                            hide_index=True
+                        )
                     else:
-                        return "No result data"
-                else:
-                    # cursor.close()
-                    # conn.commit()  
-                    # conn.close()
-                    if "insert" in query.lower():
-                        return " Data inserted sucessfully.."
-                    elif "create" in query.lower():
-                        return "Table created Sucessfully.."
-                    elif "update" in query.lower():
-                        return "Data updated Sucessfully.."
+                        st.write(st.session_state.query_results)
+                    result_explanation()
+                    if st.session_state.explanation is not None:
+                        st.subheader("Explanations")
+                        st.write(st.session_state.explanation)
+
+                except Exception as e:
+
+                    st.error(f"Error displaying results: {str(e)}")
+
+            # if st.button("Explain"):
+            #     result_explanation()
+
+            # if st.session_state.explanation is not None:
+            #     st.subheader("Explanations")
+            #     st.write(st.session_state.explanation)
+
+
                     
-                return None
-        except Exception as e:
-            if str(e)=="You can only execute one statement at a time":
-                return "Multiple queries "
-            raise Exception(f"Query execution failed: {str(e)}")
-        finally:
-            pass
-            # cursor.close() 
-            # conn.close()
-    
-    def validate_sql(self, cursor, query,db_type):
-        """Validates if an SQL query is syntactically correct without execution."""
-        try:
-            if db_type == "PostgreSQL" or db_type == "MySQL":
-                cursor.execute(f"EXPLAIN {query}")
-            elif db_type == "SQLite":
-                cursor.execute(f"EXPLAIN QUERY PLAN {query}")
 
-            return {"success": True, "Msg": "SQL query is valid."}
+def render_sidebar():
+    with st.sidebar:
+        st.header("Database Configuration")
         
-        except Exception as e:
-            return {"success": False, "Msg": f"Invalid SQL: {str(e)}"}
+        db_type = st.selectbox(
+            "Select Database Type", 
+            ["SQLite", "PostgreSQL", "MySQL"],
+            key="db_type_select"
+        )
+        st.session_state.db_data["db_type"] = db_type
 
-class QueryGenerator:
-    def __init__(self):
-        self.model = genai.GenerativeModel("gemini-pro")
+        # Get connection details based on database type
+        connection_details = db_manager.get_connection_form(db_type)
+        
+        # Update session state with form values
+        for field, value in connection_details.items():
+            st.session_state.db_data[field] = value
 
-    def generate_query(self, question: str, schema: str) -> str:
-        """Generate SQL query from natural language question"""
-        prompt = self._get_prompt_template(schema)
-        # return "DELETE FROM teacher;"
-        return "SELECT   name FROM   Student;"
-        # response = self.model.generate_content(prompt + "\n\nUser Question: " + question)
-        # return response.text
+        if st.button("Test Connection"):
+            connection_status = db_manager.test_connection(st.session_state.db_data)
+            st.session_state.db_connection = connection_status.get('success', False)
+            if connection_status['success']:
+                st.success(connection_status['message'])
+            else:
+                st.error(connection_status['message'])
 
-    def _get_prompt_template(self, schema: str) -> str:
-        """Get the prompt template for query generation"""
-        return f"""
-        You are an expert SQL assistant. You will help users write SQL queries that are efficient, secure and follow best practices.
+        st.subheader("Database Schema")
+        if st.checkbox("Show Schema") and st.session_state.db_connection:
+            schema_data = db_manager.get_schema(st.session_state.db_data)
+            if schema_data.get('success'):
+                st.session_state.db_data["db_schema"] = schema_data['schema']
+                st.code(schema_data['schema'], language="sql")
+            else:
+                st.error(schema_data['message'])
 
-        Database Schema:
-        {schema}
+        st.markdown("---")
+        st.markdown("### About")
+        st.markdown("Convert natural language to SQL queries and execute them.")
+        
+st.set_page_config(
+    page_title="SQL Query Generator",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+def main():
+    render_main_interface()
+    render_sidebar()
+    # print("Page Rendered")
 
-        Rules to follow:
-        1. Only write standardized SQL that works across major databases
-        2. Convert English questions into SQL queries based on the above schema
-        3. Add proper indexing suggestions when relevant
-        4. Use clear aliases and formatting
-        5. Consider performance implications
-        6. Avoid SQL injection risks
-        7. Include error handling where needed
-        8. SQL code should not have any syntax errors
-        9. Do not begin or end with any ``` or any other special characters
-        10. Only use tables and columns that exist in the schema above
-
-        Important note: Don't mention sql in your response, provide only the SQL query
-
-        Please provide only the SQL query without any explanations unless specifically asked for details.
-        """
+if __name__ == "__main__":
+    print("Start of the program")
+    main()
