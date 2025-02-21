@@ -384,10 +384,8 @@ def render_sidebar():
         )
         st.session_state.db_data["db_type"] = db_type
 
-        # Get connection details based on database type
         connection_details = db_manager.get_connection_form(db_type)
         
-        # Update session state with form values
         for field, value in connection_details.items():
             st.session_state.db_data[field] = value
 

@@ -23,6 +23,8 @@ query_generate_prompt=""" You are an expert SQL assistant. You will help users w
         Please provide only the SQL query without any explanations unless specifically asked for details.
 
         """
+
+
 query_regenerate_prompt="""
         You are an advanced SQL assistant. Your goal is to generate a **corrected** SQL query based on a given database schema, an English question, and a previous incorrect query.  
 

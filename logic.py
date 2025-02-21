@@ -429,6 +429,7 @@ class DatabaseManager:
 class QueryGenerator:
     def __init__(self):
         self.model = genai.GenerativeModel("gemini-pro")
+        
 
     def generate_query(self, question: str, schema: str) -> str:
         """Generate SQL query from natural language question"""
