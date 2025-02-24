@@ -295,9 +295,11 @@ def execute_query():
                 st.session_state.query_results = None
         except Exception as e:
             # generate_sql(str(e))
-            st.error(f"Error executing query: {str(e)}")
+            st.session_state.explanation = "None"
+            st.error(f"Error: {str(e)}")
+            
 def result_explanation():
-    with st.spinner("Getting Insghts..."):
+    with st.spinner("Getting Insights..."):
         try:
             insight= query_generator.result_explanation(
                 st.session_state.generated_query,

@@ -247,12 +247,14 @@ class DatabaseManager:
         """Create a new database connection"""
         try:
             if db_data['db_type'] == "SQLite":
-                return sqlite3.connect(db_data['db_name'])
+                return sqlite3.connect(f"file:{db_data['db_name']}?mode=ro", uri=True) #read only
+                # return sqlite3.connect(db_data['db_name']) #perform modifications
+            
             elif db_data['db_type'] == "PostgreSQL":
                 return psycopg2.connect(
                     host=db_data['db_host'],
                     database=db_data['db_name'],
-                    user=db_data['db_user'],
+                    user="readonly_user", #  db_data['db_user'],
                     password=db_data['db_password'],
                     port=db_data['db_port']
                 )
@@ -260,7 +262,7 @@ class DatabaseManager:
                 return mysql.connector.connect(
                     host=db_data['db_host'],
                     database=db_data['db_name'],
-                    user=db_data['db_user'],
+                    user="readonly_user", #db_data['db_user'],
                     password=db_data['db_password'],
                     port=db_data['db_port']
                 )
@@ -407,9 +409,12 @@ class DatabaseManager:
             
         except Exception as e:
             if str(e)=="You can only execute one statement at a time":
-                return "Multiple queries "
+                raise Exception("Multiple queries ")
+            if str(e) == "attempt to write a readonly database":
+                raise Exception("Data modification is not allowed")
             
             raise Exception(f"Query execution failed: {str(e)}")
+        
         finally:
             pass
     
