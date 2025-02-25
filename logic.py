@@ -254,7 +254,7 @@ class DatabaseManager:
                 return psycopg2.connect(
                     host=db_data['db_host'],
                     database=db_data['db_name'],
-                    user="readonly_user", #  db_data['db_user'],
+                    user= db_data['db_user'],
                     password=db_data['db_password'],
                     port=db_data['db_port']
                 )
@@ -281,11 +281,11 @@ class DatabaseManager:
             }
         else:
             return {
-                'db_host': st.sidebar.text_input("Host", "localhost"),
-                'db_port': st.sidebar.text_input("Port", "5432" if db_type == "PostgreSQL" else "3306"),
-                'db_name': st.sidebar.text_input("Database Name", value='restapi_db'),
+                'db_host': st.sidebar.text_input("Host", "tramway.proxy.rlwy.net"),
+                'db_port': st.sidebar.text_input("Port", "28682" if db_type == "PostgreSQL" else "3306"),
+                'db_name': st.sidebar.text_input("Database Name", value='railway'),
                 'db_user': st.sidebar.text_input("User", value="postgres"),
-                'db_password': st.sidebar.text_input("Password", type="password", value="1234")
+                'db_password': st.sidebar.text_input("Password", type="password", value="FE-3524b4CA6-g3*A2cffDdBDFf15DEE")
             }
 
     def test_connection(self, db_data: Dict[str, Any]) -> Dict[str, Any]:
